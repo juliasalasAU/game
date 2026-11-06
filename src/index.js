@@ -134,11 +134,15 @@ export class Room {
           new Set(m.order).size === ROUND_COUNT && m.order.every(n => Number.isInteger(n) && n >= 0 && n < 1000);
         if (m.action === "start" && validOrder && g.phase === "lobby") {
           for (const p of Object.values(d.players)) p.guesses = {};
-          d.game = { phase: "guess", round: 0, order: m.order };
+          d.game = { phase: "guess", round: 0, order: m.order, accepted: {} };
         } else if (m.action === "reveal" && g.phase === "guess") {
           d.game = { ...g, phase: "reveal" };
         } else if (m.action === "next" && g.phase === "reveal") {
           d.game = g.round >= ROUND_COUNT - 1 ? { ...g, phase: "done" } : { ...g, phase: "guess", round: g.round + 1 };
+        } else if (m.action === "accept" && g.phase === "reveal" && typeof m.pid === "string" && d.players[m.pid]) {
+          const r = String(g.round); const acc = { ...(g.accepted || {}) }; const row = { ...(acc[r] || {}) };
+          if (row[m.pid]) delete row[m.pid]; else row[m.pid] = true; acc[r] = row;
+          d.game = { ...g, accepted: acc };
         } else if (m.action === "end") {
           d.game = { ...g, phase: "done" };
         } else if (m.action === "lobby") {
