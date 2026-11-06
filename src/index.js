@@ -131,7 +131,7 @@ export class Room {
       case "host": {
         if (!att.isHost) return;
         const validOrder = Array.isArray(m.order) && m.order.length === ROUND_COUNT &&
-          new Set(m.order).size === ROUND_COUNT && m.order.every(n => Number.isInteger(n) && n >= 0 && n < ROUND_COUNT);
+          new Set(m.order).size === ROUND_COUNT && m.order.every(n => Number.isInteger(n) && n >= 0 && n < 1000);
         if (m.action === "start" && validOrder && g.phase === "lobby") {
           for (const p of Object.values(d.players)) p.guesses = {};
           d.game = { phase: "guess", round: 0, order: m.order };

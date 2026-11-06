@@ -137,7 +137,7 @@
   <!-- Start screen: host a room, join a room, or one-phone mode -->
   <section class="panel" id="home">
     <p class="eyebrow">A low-score quiz for a roomful of players</p>
-    <p class="lede">Twenty categories. Each has many correct answers, and every correct answer carries a score from 100 down to 0 for how many people out of a hundred would have thought of it. Everyone answers each round; the lowest total after twenty rounds wins.</p>
+    <p class="lede">Twenty categories per game, drawn from a pool of 37. Each has many correct answers, and every correct answer carries a score from 100 down to 0 for how many people out of a hundred would have thought of it. Everyone answers each round; the lowest total after twenty rounds wins.</p>
     <ul class="rules">
       <li><span class="n">1</span><span>Each round, every player gives one correct answer. Answers stay hidden until the host reveals.</span></li>
       <li><span class="n">2</span><span>Your answer's score is added to your total. A wrong answer costs 100.</span></li>
@@ -270,48 +270,83 @@
 </div>
 
 <script>
-// Each round: title, note, answers as [display, score, ...aliases]. Score = estimated people out of 100 who would name it.
+// Pool of categories. Each game picks a random 20. Each round: title, note, answers as [display, score, ...aliases].
+// Score = estimated people out of 100 who would give that answer (0 = a rare answer, worth minus 5).
 const ROUNDS = [
   { title: "Countries that share a land border with Germany", note: "Nine countries. Name one.", answers: [
-    ["France",72],["Austria",62],["Poland",60],["Switzerland",48],["Netherlands",46,"holland","the netherlands"],["Denmark",40],["Belgium",38],["Czechia",24,"czech republic","czech"],["Luxembourg",12]] },
-  { title: "US states beginning with the letter M", note: "There are eight of them.", answers: [
-    ["Michigan",55],["Montana",44],["Massachusetts",42],["Maine",38],["Minnesota",36],["Missouri",33],["Mississippi",30],["Maryland",21]] },
-  { title: "Chemical elements with a one-letter symbol", note: "Fourteen elements qualify. Give the element's name or its symbol.", answers: [
-    ["Hydrogen",80,"h"],["Oxygen",74,"o"],["Carbon",66,"c"],["Nitrogen",50,"n"],["Potassium",34,"k"],["Sulfur",30,"s","sulphur"],["Iodine",26,"i"],["Fluorine",22,"f"],["Phosphorus",20,"p"],["Uranium",18,"u"],["Boron",10,"b"],["Tungsten",8,"w","wolfram"],["Vanadium",4,"v"],["Yttrium",1,"y"]] },
-  { title: "Films that won the Academy Award for Best Picture in the 1990s", note: "The ceremonies for films released 1990 to 1999.", answers: [
-    ["Titanic",84],["Forrest Gump",70],["Schindler's List",46,"schindlers list"],["Braveheart",40],["The Silence of the Lambs",38,"silence of the lambs"],["American Beauty",30],["Shakespeare in Love",22],["Dances with Wolves",21],["Unforgiven",14],["The English Patient",11,"english patient"]] },
-  { title: "Tragedies by William Shakespeare", note: "The plays usually grouped as tragedies in the First Folio.", answers: [
-    ["Romeo and Juliet",88,"romeo & juliet"],["Hamlet",80],["Macbeth",78],["Othello",50],["King Lear",46,"lear"],["Julius Caesar",40],["Antony and Cleopatra",18,"anthony and cleopatra","antony & cleopatra"],["Titus Andronicus",8],["Coriolanus",6],["Troilus and Cressida",4],["Timon of Athens",2],["Cymbeline",1]] },
+    ["France",72],["Austria",62],["Poland",60],["Denmark",52],["Switzerland",48],["Netherlands",46,"holland","the netherlands"],["Belgium",38],["Czechia",24,"czech republic","czech"],["Luxembourg",12]] },
+  { title: "Countries with a coastline on the Baltic Sea", note: "Nine countries.", answers: [
+    ["Denmark",70],["Sweden",68],["Finland",60],["Poland",50],["Germany",46],["Estonia",34],["Latvia",32],["Lithuania",30],["Russia",22]] },
+  { title: "The Nordic countries and territories", note: "The eight members of the Nordic Council.", answers: [
+    ["Denmark",82],["Sweden",80],["Norway",78],["Finland",64],["Iceland",56],["Greenland",22],["Faroe Islands",16,"faroe","faeroe islands","faroes"],["Åland",3,"aland","aland islands","åland islands"]] },
   { title: "Member states of the European Union", note: "27 countries. Name any one.", answers: [
-    ["France",70],["Germany",68],["Spain",56],["Italy",54],["Netherlands",36,"holland","the netherlands"],["Belgium",30],["Portugal",28],["Sweden",28],["Denmark",26],["Poland",26],["Ireland",24],["Austria",22],["Greece",22],["Finland",18],["Hungary",14],["Czechia",14,"czech republic"],["Croatia",12],["Romania",11],["Bulgaria",9],["Slovakia",8],["Slovenia",7],["Lithuania",6],["Latvia",5],["Estonia",5],["Luxembourg",5],["Cyprus",4],["Malta",3]] },
-  { title: "Countries in South America", note: "Twelve sovereign states on the continent.", answers: [
-    ["Brazil",88],["Argentina",74],["Chile",50],["Colombia",46],["Peru",42],["Venezuela",30],["Uruguay",22],["Ecuador",20],["Bolivia",18],["Paraguay",14],["Guyana",4],["Suriname",2]] },
-  { title: "Signs of the Western zodiac", note: "All twelve are valid.", answers: [
-    ["Leo",56],["Scorpio",44],["Gemini",42],["Aries",40],["Cancer",40],["Taurus",38],["Virgo",36],["Libra",34],["Pisces",34],["Sagittarius",28],["Capricorn",26],["Aquarius",24]] },
-  { title: "Actors who played James Bond in the Eon film series", note: "Six actors across the official films.", answers: [
-    ["Sean Connery",82,"connery"],["Daniel Craig",76,"craig"],["Pierce Brosnan",60,"brosnan"],["Roger Moore",52,"moore"],["Timothy Dalton",24,"dalton"],["George Lazenby",9,"lazenby"]] },
-  { title: "Cities that have hosted the Summer Olympic Games", note: "Any host city from 1896 to 2024.", answers: [
-    ["London",68],["Paris",64],["Tokyo",54],["Beijing",46],["Sydney",38],["Athens",36],["Rio de Janeiro",34,"rio"],["Los Angeles",32,"la"],["Barcelona",28],["Atlanta",22],["Berlin",20],["Rome",18],["Moscow",16],["Munich",14],["Seoul",14],["Montreal",12],["Mexico City",10],["Amsterdam",8],["Melbourne",8],["Helsinki",5],["Stockholm",4],["Antwerp",2],["St. Louis",2,"saint louis","st louis"]] },
-  { title: "Feature films released by Pixar", note: "Any Pixar feature, from Toy Story onward.", answers: [
-    ["Toy Story",80],["Finding Nemo",62],["Cars",54],["Up",50],["Monsters, Inc.",46,"monsters inc"],["The Incredibles",44,"incredibles"],["Inside Out",42],["Coco",36],["WALL-E",34,"walle","wall e"],["Ratatouille",30],["Toy Story 2",22],["Toy Story 3",22],["Brave",20],["Soul",18],["Toy Story 4",16],["Luca",16],["Finding Dory",16],["Inside Out 2",14],["Incredibles 2",12],["Turning Red",12],["Elemental",10],["Cars 2",10],["Monsters University",10],["Lightyear",8],["A Bug's Life",8,"bugs life","a bugs life"],["Cars 3",6],["Onward",6],["The Good Dinosaur",5,"good dinosaur"],["Elio",4]] },
-  { title: "Prime numbers below 50", note: "Fifteen of them. Type the number.", answers: [
-    ["7",60],["3",56],["5",52],["2",46],["13",40],["11",38],["17",26],["19",22],["23",18],["29",12],["31",12],["37",8],["41",6],["43",5],["47",5]] },
-  { title: "European countries beginning with S", note: "Seven sovereign states in Europe.", answers: [
-    ["Spain",80],["Sweden",72],["Switzerland",64],["Slovakia",22],["Slovenia",20],["Serbia",18],["San Marino",6]] },
-  { title: "Harry Potter books by J. K. Rowling", note: "The seven novels in the main series.", answers: [
-    ["Philosopher's Stone",64,"the philosophers stone","philosophers stone","sorcerers stone","sorcerer's stone","harry potter and the philosophers stone","harry potter and the sorcerers stone"],["Goblet of Fire",48,"the goblet of fire","harry potter and the goblet of fire"],["Deathly Hallows",46,"the deathly hallows","harry potter and the deathly hallows"],["Chamber of Secrets",44,"the chamber of secrets","harry potter and the chamber of secrets"],["Prisoner of Azkaban",42,"the prisoner of azkaban","harry potter and the prisoner of azkaban"],["Half-Blood Prince",38,"the half blood prince","half blood prince","harry potter and the half blood prince"],["Order of the Phoenix",36,"the order of the phoenix","harry potter and the order of the phoenix"]] },
-  { title: "Letters of the Greek alphabet", note: "Twenty-four letters. Name one.", answers: [
-    ["Alpha",76],["Beta",64],["Omega",56],["Delta",50],["Gamma",42],["Pi",40],["Sigma",30],["Theta",24],["Lambda",20],["Epsilon",18],["Zeta",14],["Kappa",14],["Omicron",14],["Mu",12],["Phi",12],["Rho",10],["Tau",10],["Psi",9],["Chi",8],["Eta",7],["Iota",7],["Nu",6],["Upsilon",4],["Xi",4]] },
-  { title: "The seven deadly sins", note: "In the traditional Christian list.", answers: [
-    ["Greed",66,"avarice"],["Pride",60],["Lust",58],["Envy",50],["Gluttony",46],["Wrath",40,"anger"],["Sloth",36]] },
-  { title: "British monarchs who have reigned since 1900", note: "Seven kings and queens, including those whose reign started before 1900.", answers: [
-    ["Elizabeth II",84,"queen elizabeth","elizabeth the second","queen elizabeth ii","elizabeth 2"],["Charles III",56,"king charles","charles the third","charles 3","king charles iii"],["Victoria",40,"queen victoria"],["George VI",26,"george the sixth","king george vi","george 6"],["Edward VIII",20,"edward the eighth","edward 8","king edward viii"],["George V",16,"george the fifth","george 5","king george v"],["Edward VII",12,"edward the seventh","edward 7","king edward vii"]] },
-  { title: "Countries that have won the men's FIFA World Cup", note: "Eight nations have lifted the trophy.", answers: [
-    ["Brazil",80],["Germany",62,"west germany"],["Argentina",58],["France",52],["Italy",44],["England",40],["Spain",34],["Uruguay",14]] },
+    ["France",66],["Germany",66],["Spain",54],["Italy",52],["Denmark",40],["Netherlands",36,"holland","the netherlands"],["Belgium",30],["Portugal",28],["Sweden",28],["Poland",26],["Ireland",24],["Austria",22],["Greece",22],["Finland",18],["Hungary",14],["Czechia",14,"czech republic"],["Croatia",12],["Romania",11],["Bulgaria",9],["Slovakia",8],["Slovenia",7],["Lithuania",6],["Latvia",5],["Estonia",5],["Luxembourg",5],["Cyprus",4],["Malta",3]] },
+  { title: "Countries that use the euro", note: "Twenty-one countries in the eurozone.", answers: [
+    ["Germany",62],["France",60],["Spain",52],["Italy",50],["Netherlands",32,"holland","the netherlands"],["Belgium",30],["Portugal",28],["Ireland",26],["Austria",24],["Greece",24],["Finland",22],["Croatia",10],["Slovakia",9],["Slovenia",8],["Lithuania",7],["Latvia",6],["Estonia",6],["Luxembourg",6],["Cyprus",5],["Malta",4],["Bulgaria",3]] },
+  { title: "European countries with a reigning monarch", note: "Twelve monarchies, from kingdoms to a city state.", answers: [
+    ["United Kingdom",80,"uk","britain","great britain","england"],["Denmark",70],["Sweden",62],["Norway",58],["Spain",50],["Netherlands",44,"holland","the netherlands"],["Belgium",36],["Monaco",24],["Luxembourg",14],["Liechtenstein",10],["Vatican City",6,"vatican","the vatican","holy see"],["Andorra",4]] },
+  { title: "Countries that share a land border with Russia", note: "Fourteen countries.", answers: [
+    ["Finland",62],["Ukraine",60],["China",52],["Norway",40],["Estonia",36],["Latvia",34],["Poland",32],["Belarus",32],["Lithuania",30],["Kazakhstan",26],["Mongolia",22],["Georgia",20],["North Korea",16],["Azerbaijan",10]] },
   { title: "Countries that share a land border with France", note: "Count France's overseas departments too, and the set gets bigger than most people think.", answers: [
     ["Spain",74],["Germany",68],["Italy",60],["Belgium",52],["Switzerland",50],["Luxembourg",24],["Monaco",18],["Andorra",14],["Brazil",2],["Suriname",1],["Netherlands",1,"the netherlands","holland"]] },
+  { title: "Countries in South America", note: "Twelve sovereign states on the continent.", answers: [
+    ["Brazil",88],["Argentina",74],["Chile",50],["Colombia",46],["Peru",42],["Venezuela",30],["Uruguay",22],["Ecuador",20],["Bolivia",18],["Paraguay",14],["Guyana",4],["Suriname",2]] },
+  { title: "African countries beginning with M", note: "Seven of them.", answers: [
+    ["Morocco",68],["Madagascar",44],["Mozambique",36],["Mali",32],["Mauritius",22],["Malawi",18],["Mauritania",14]] },
+  { title: "Countries where Spanish is an official language", note: "About twenty. Name one.", answers: [
+    ["Spain",82],["Mexico",66],["Argentina",50],["Colombia",40],["Chile",34],["Peru",30],["Cuba",26],["Venezuela",22],["Uruguay",16],["Ecuador",14],["Bolivia",12],["Guatemala",10],["Costa Rica",10],["Dominican Republic",8],["Panama",8],["Paraguay",7],["Honduras",6],["Nicaragua",6],["El Salvador",5],["Puerto Rico",4],["Equatorial Guinea",2]] },
+  { title: "Countries with more than 100 million people", note: "Sixteen countries at the last count.", answers: [
+    ["China",80],["India",78],["United States",66,"usa","us","america","united states of america"],["Indonesia",40],["Brazil",38],["Russia",36],["Japan",32],["Pakistan",30],["Nigeria",28],["Mexico",26],["Bangladesh",22],["Philippines",14],["Ethiopia",12],["Egypt",12],["Vietnam",8],["DR Congo",4,"congo","democratic republic of the congo","democratic republic of congo","drc"]] },
+  { title: "Countries whose flag uses only red and white", note: "Any sovereign state whose flag has no other colour.", answers: [
+    ["Denmark",66],["Japan",60],["Switzerland",56],["Canada",50],["Poland",44],["Austria",36],["Indonesia",26],["Turkey",24,"türkiye","turkiye"],["Monaco",16],["Singapore",14],["Tunisia",10],["Peru",10],["Georgia",6],["Bahrain",4],["Malta",2]] },
+  { title: "Official languages of the United Nations", note: "Six languages.", answers: [
+    ["English",80],["French",64],["Spanish",56],["Chinese",44,"mandarin"],["Russian",40],["Arabic",34]] },
+  { title: "Cities that have hosted the Summer Olympic Games", note: "Any host city from 1896 to 2024.", answers: [
+    ["London",68],["Paris",64],["Tokyo",54],["Beijing",46],["Sydney",38],["Athens",36],["Rio de Janeiro",34,"rio"],["Los Angeles",32,"la"],["Barcelona",28],["Atlanta",22],["Berlin",20],["Rome",18],["Moscow",16],["Munich",14],["Seoul",14],["Montreal",12],["Mexico City",10],["Amsterdam",8],["Melbourne",8],["Helsinki",5],["Stockholm",4],["Antwerp",2],["St. Louis",2,"saint louis","st louis"]] },
+  { title: "Countries that have won the men's FIFA World Cup", note: "Eight nations have lifted the trophy.", answers: [
+    ["Brazil",80],["Germany",62,"west germany"],["Argentina",58],["France",52],["Italy",44],["England",40],["Spain",34],["Uruguay",14]] },
+  { title: "Countries that have hosted the men's FIFA World Cup", note: "Any host country, 1930 to 2026.", answers: [
+    ["Brazil",58],["Qatar",54],["Germany",50,"west germany"],["United States",46,"usa","us","america"],["Russia",40],["South Africa",38],["France",36],["Mexico",30],["Italy",26],["Spain",22],["Japan",20],["South Korea",18,"korea"],["England",18],["Argentina",14],["Canada",12],["Sweden",8],["Switzerland",6],["Chile",5],["Uruguay",5]] },
+  { title: "Planets of the solar system", note: "Eight planets.", answers: [
+    ["Mars",68],["Jupiter",56],["Saturn",50],["Venus",40],["Earth",36],["Mercury",34],["Neptune",30],["Uranus",28]] },
   { title: "The noble gases", note: "Group 18 of the periodic table: seven elements.", answers: [
     ["Helium",70],["Neon",54],["Argon",40],["Xenon",28],["Krypton",26],["Radon",16],["Oganesson",2]] },
+  { title: "Chemical elements with a one-letter symbol", note: "Fourteen elements qualify. Give the element's name or its symbol.", answers: [
+    ["Hydrogen",80,"h"],["Oxygen",74,"o"],["Carbon",66,"c"],["Nitrogen",50,"n"],["Potassium",34,"k"],["Sulfur",30,"s","sulphur"],["Iodine",26,"i"],["Fluorine",22,"f"],["Phosphorus",20,"p"],["Uranium",18,"u"],["Boron",10,"b"],["Tungsten",8,"w","wolfram"],["Vanadium",4,"v"],["Yttrium",1,"y"]] },
+  { title: "Bones of the human arm and leg", note: "The long bones plus the kneecap: seven in all.", answers: [
+    ["Femur",66,"thigh bone","thighbone"],["Tibia",50,"shin bone","shinbone"],["Humerus",44],["Fibula",36],["Radius",34],["Ulna",30],["Patella",26,"kneecap","knee cap"]] },
+  { title: "Prime numbers below 50", note: "Fifteen of them. Type the number.", answers: [
+    ["7",60],["3",56],["5",52],["2",46],["13",40],["11",38],["17",26],["19",22],["23",18],["29",12],["31",12],["37",8],["41",6],["43",5],["47",5]] },
+  { title: "Letters of the Greek alphabet", note: "Twenty-four letters. Name one.", answers: [
+    ["Alpha",76],["Beta",64],["Omega",56],["Delta",50],["Gamma",42],["Pi",40],["Sigma",30],["Theta",24],["Lambda",20],["Epsilon",18],["Zeta",14],["Kappa",14],["Omicron",14],["Mu",12],["Phi",12],["Rho",10],["Tau",10],["Psi",9],["Chi",8],["Eta",7],["Iota",7],["Nu",6],["Upsilon",4],["Xi",4]] },
+  { title: "Signs of the Western zodiac", note: "All twelve are valid.", answers: [
+    ["Leo",56],["Scorpio",44],["Gemini",42],["Aries",40],["Cancer",40],["Taurus",38],["Virgo",36],["Libra",34],["Pisces",34],["Sagittarius",28],["Capricorn",26],["Aquarius",24]] },
+  { title: "The seven deadly sins", note: "In the traditional Christian list.", answers: [
+    ["Greed",66,"avarice"],["Pride",60],["Lust",58],["Envy",50],["Gluttony",46],["Wrath",40,"anger"],["Sloth",36]] },
+  { title: "The Seven Wonders of the Ancient World", note: "The classical list.", answers: [
+    ["Great Pyramid of Giza",76,"pyramid","pyramids","the pyramids","great pyramid","pyramid of giza","pyramids of giza"],["Hanging Gardens of Babylon",58,"hanging gardens"],["Colossus of Rhodes",40,"colossus"],["Lighthouse of Alexandria",36,"lighthouse","pharos","pharos of alexandria"],["Temple of Artemis",24,"temple of artemis at ephesus","artemis"],["Mausoleum at Halicarnassus",18,"mausoleum","mausoleum of halicarnassus"],["Statue of Zeus at Olympia",16,"statue of zeus","zeus"]] },
+  { title: "Instruments in a symphony orchestra", note: "Any instrument with a regular seat in the orchestra.", answers: [
+    ["Violin",80],["Cello",62],["Flute",56],["Trumpet",50],["Drums",40,"timpani","kettle drums","percussion"],["Clarinet",38],["Viola",34],["Double bass",30,"bass","contrabass"],["Trombone",30],["Oboe",28],["French horn",26,"horn"],["Harp",24],["Bassoon",20],["Tuba",18],["Piccolo",14],["Cymbals",8],["Triangle",8],["Cor anglais",4,"english horn"],["Celesta",2],["Contrabassoon",1]] },
+  { title: "Tragedies by William Shakespeare", note: "The plays usually grouped as tragedies in the First Folio.", answers: [
+    ["Romeo and Juliet",88,"romeo & juliet"],["Hamlet",80],["Macbeth",78],["Othello",50],["King Lear",46,"lear"],["Julius Caesar",40],["Antony and Cleopatra",18,"anthony and cleopatra","antony & cleopatra"],["Titus Andronicus",8],["Coriolanus",6],["Troilus and Cressida",4],["Timon of Athens",2],["Cymbeline",1]] },
+  { title: "Harry Potter books by J. K. Rowling", note: "The seven novels in the main series.", answers: [
+    ["Philosopher's Stone",64,"the philosophers stone","philosophers stone","sorcerers stone","sorcerer's stone","harry potter and the philosophers stone","harry potter and the sorcerers stone"],["Goblet of Fire",48,"the goblet of fire","harry potter and the goblet of fire"],["Deathly Hallows",46,"the deathly hallows","harry potter and the deathly hallows"],["Chamber of Secrets",44,"the chamber of secrets","harry potter and the chamber of secrets"],["Prisoner of Azkaban",42,"the prisoner of azkaban","harry potter and the prisoner of azkaban"],["Half-Blood Prince",38,"the half blood prince","half blood prince","harry potter and the half blood prince"],["Order of the Phoenix",36,"the order of the phoenix","harry potter and the order of the phoenix"]] },
+  { title: "Feature films released by Pixar", note: "Any Pixar feature, from Toy Story onward.", answers: [
+    ["Toy Story",80],["Finding Nemo",62],["Cars",54],["Up",50],["Monsters, Inc.",46,"monsters inc"],["The Incredibles",44,"incredibles"],["Inside Out",42],["Coco",36],["WALL-E",34,"walle","wall e"],["Ratatouille",30],["Toy Story 2",22],["Toy Story 3",22],["Brave",20],["Soul",18],["Toy Story 4",16],["Luca",16],["Finding Dory",16],["Inside Out 2",14],["Incredibles 2",12],["Turning Red",12],["Elemental",10],["Cars 2",10],["Monsters University",10],["Lightyear",8],["A Bug's Life",8,"bugs life","a bugs life"],["Cars 3",6],["Onward",6],["The Good Dinosaur",5,"good dinosaur"],["Elio",4]] },
+  { title: "Films directed by Christopher Nolan", note: "Any of his feature films.", answers: [
+    ["Inception",74],["Interstellar",66],["The Dark Knight",58,"dark knight"],["Oppenheimer",56],["Dunkirk",34],["Tenet",30],["Batman Begins",28],["The Dark Knight Rises",26,"dark knight rises"],["Memento",24],["The Prestige",22,"prestige"],["The Odyssey",14,"odyssey"],["Insomnia",8],["Following",2]] },
+  { title: "Studio albums by Taylor Swift", note: "Her own studio albums, not the re-recordings.", answers: [
+    ["1989",60],["Folklore",50],["Red",46],["Reputation",44],["Lover",42],["Midnights",40],["Fearless",38],["Evermore",30],["Speak Now",28],["The Tortured Poets Department",26,"tortured poets department","ttpd"],["The Life of a Showgirl",22,"life of a showgirl"],["Taylor Swift",12,"debut"]] },
+  { title: "Actors who played James Bond in the Eon film series", note: "Six actors across the official films.", answers: [
+    ["Sean Connery",82,"connery"],["Daniel Craig",76,"craig"],["Pierce Brosnan",60,"brosnan"],["Roger Moore",52,"moore"],["Timothy Dalton",24,"dalton"],["George Lazenby",9,"lazenby"]] },
+  { title: "Danish brands and companies known around the world", note: "Any Danish company most people abroad would recognise.", answers: [
+    ["Lego",90],["Carlsberg",70],["Maersk",46,"mærsk","moller maersk","a.p. moller maersk","a.p. møller"],["Novo Nordisk",40,"novo"],["Pandora",34],["Bang & Olufsen",30,"bang and olufsen","b&o"],["Tuborg",26],["Ecco",22],["Vestas",18],["Arla",16],["Royal Copenhagen",12],["Jysk",10],["Georg Jensen",8],["Danfoss",8],["Hummel",6],["Skagen",5],["Lurpak",5],["Bestseller",3],["Rockwool",3],["Grundfos",2],["Ørsted",2,"orsted"],["Danish Crown",2],["Zealand Pharma",1],["Kähler",1,"kahler"]] },
+  { title: "Famous Danes", note: "Anyone Danish who is well known outside Denmark, past or present.", answers: [
+    ["Hans Christian Andersen",80,"h.c. andersen","hc andersen","andersen"],["Mads Mikkelsen",54,"mikkelsen"],["Niels Bohr",40,"bohr"],["Søren Kierkegaard",34,"kierkegaard","soren kierkegaard"],["Lars von Trier",26,"von trier"],["Christian Eriksen",24,"eriksen"],["Caroline Wozniacki",22,"wozniacki"],["Viktor Axelsen",18,"axelsen"],["Lars Ulrich",16,"ulrich"],["Karen Blixen",16,"blixen","isak dinesen"],["Jonas Vingegaard",16,"vingegaard"],["Nikolaj Coster-Waldau",14,"coster-waldau","coster waldau"],["Peter Schmeichel",12,"schmeichel"],["Tycho Brahe",12,"brahe"],["Margrethe II",12,"queen margrethe","margrethe","margrethe the second"],["Bjarke Ingels",10,"ingels"],["Holger Rune",10,"rune"],["Jørn Utzon",8,"utzon","jorn utzon"],["Viggo Mortensen",8,"mortensen"],["Mette Frederiksen",8,"frederiksen"],["Carl Nielsen",6,"nielsen"],["Nicolas Winding Refn",5,"refn","winding refn"],["King Frederik X",5,"frederik","king frederik","frederik x","frederik the tenth"],["MØ",3,"mo"],["Lukas Graham",3],["Ole Kirk Christiansen",2,"ole kirk kristiansen"],["Aqua",2],["Sidse Babett Knudsen",2],["Victor Borge",2],["Kasper Schmeichel",2]] },
+  { title: "European countries beginning with S", note: "Seven sovereign states in Europe.", answers: [
+    ["Spain",80],["Sweden",72],["Switzerland",64],["Slovakia",22],["Slovenia",20],["Serbia",18],["San Marino",6]] },
+  { title: "US states beginning with the letter M", note: "There are eight of them.", answers: [
+    ["Michigan",55],["Montana",44],["Massachusetts",42],["Maine",38],["Minnesota",36],["Missouri",33],["Mississippi",30],["Maryland",21]] },
 ];
 
 const el = id => document.getElementById(id);
@@ -620,13 +655,13 @@ el("form").addEventListener("submit", e => {
   const raw = el("guess").value.trim(); if (!raw) { el("guess").focus(); return; }
   store.setGuess(me.id, raw);
 });
-el("start").addEventListener("click", () => store.setGame({ phase: "guess", round: 0, order: shuffle(ROUNDS.map((_, i) => i)) }));
+el("start").addEventListener("click", () => store.setGame({ phase: "guess", round: 0, order: shuffle(ROUNDS.map((_, i) => i)).slice(0, 20) }));
 el("reset-lobby").addEventListener("click", () => send({ type: "host", action: "clear" }));
 el("revealBtn").addEventListener("click", () => store.setGame({ ...game, phase: "reveal" }));
 el("next").addEventListener("click", () => store.setGame(game.round >= 19 ? { ...game, phase: "done" } : { ...game, phase: "guess", round: game.round + 1 }));
 el("abandon").addEventListener("click", () => store.setGame({ ...game, phase: "done" }));
 el("again").addEventListener("click", () => {
-  if (me.local) { Object.values(players).forEach(p => p.guesses = {}); lastPassKey = null; store.setGame({ phase: "guess", round: 0, order: shuffle(ROUNDS.map((_, i) => i)) }); return; }
+  if (me.local) { Object.values(players).forEach(p => p.guesses = {}); lastPassKey = null; store.setGame({ phase: "guess", round: 0, order: shuffle(ROUNDS.map((_, i) => i)).slice(0, 20) }); return; }
   store.setGame({ phase: "lobby", round: 0, order: null });
 });
 
@@ -642,7 +677,7 @@ el("local-start").addEventListener("click", () => {
   if (!Object.keys(localPlayers).length) return;
   me = { id: null, isHost: true, local: true, joined: false };
   players = {}; Object.entries(localPlayers).forEach(([id, p]) => players[id] = { name: p.name, guesses: {} }); lastPassKey = null;
-  store.setGame({ phase: "guess", round: 0, order: shuffle(ROUNDS.map((_, i) => i)) });
+  store.setGame({ phase: "guess", round: 0, order: shuffle(ROUNDS.map((_, i) => i)).slice(0, 20) });
 });
 
 // ---- boot --------------------------------------------------------------------
