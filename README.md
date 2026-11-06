@@ -21,6 +21,19 @@ The first deploy may ask you to confirm the Durable Object migration; answer yes
 
 To update the game later (new categories, text changes), edit `public/index.html` and run `npx wrangler deploy` again.
 
+## Deploying from GitHub instead
+
+If the repository is on GitHub, there are two ways to let it deploy itself on every push:
+
+**A. Cloudflare's Git integration** (Workers & Pages → Create → Import a repository). Settings: Worker name `rare-answer-twenty`, root directory empty, build command empty, deploy command `npx wrangler deploy`.
+
+**B. The GitHub Action in this repo** (`.github/workflows/deploy.yml`). It needs two repository secrets, added under the repo's Settings → Secrets and variables → Actions:
+
+- `CLOUDFLARE_API_TOKEN` — in the Cloudflare dashboard: profile icon → My Profile → API Tokens → Create Token → use the "Edit Cloudflare Workers" template → Continue → Create Token, and copy it.
+- `CLOUDFLARE_ACCOUNT_ID` — shown on the right of the Workers & Pages overview page in the Cloudflare dashboard.
+
+Until the secrets exist the Action just reports that it skipped; once they are set, every push to `main` deploys, and you can also run it by hand from the Actions tab.
+
 ## Hosting a game
 
 1. Open your workers.dev address on your phone and tap **Create a room**.
