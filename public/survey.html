@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Survey to Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+  :root { --bg:#101a2e; --panel:#182540; --panel-2:#213152; --fg:#f3ecdc; --muted:#a9b2c6; --accent:#f2b544; --accent-ink:#2a1c05; --good:#5fd39c; --bad:#f0706f; --line:#2f4267;
+    --display:"Unbounded","Arial Black",Impact,sans-serif; --body:"Atkinson Hyperlegible","Helvetica Neue",Arial,sans-serif; color-scheme: dark; }
+  * { box-sizing: border-box; } [hidden] { display: none !important; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--body); font-size:16px; line-height:1.5; padding:24px max(16px, env(safe-area-inset-left)) 60px; }
+  .wrap { max-width: 1000px; margin: 0 auto; display: grid; gap: 20px; }
+  h1 { font-family: var(--display); font-weight: 900; font-size: clamp(22px,4vw,32px); margin: 0; } h1 span { color: var(--accent); }
+  h2 { font-family: var(--display); font-size: 16px; margin: 0; }
+  .panel { background: var(--panel); border-radius: 18px; padding: 22px; display: grid; gap: 14px; }
+  .note { color: var(--muted); max-width: 70ch; margin: 0; }
+  ol.steps { margin: 0; padding-left: 22px; color: var(--muted); max-width: 70ch; } ol.steps li { margin: 4px 0; }
+  textarea { width: 100%; min-height: 140px; font: 14px/1.4 ui-monospace, Menlo, Consolas, monospace; background: var(--bg); color: var(--fg); border: 2px solid var(--line); border-radius: 12px; padding: 12px; resize: vertical; }
+  button { font: inherit; cursor: pointer; border: 0; border-radius: 12px; padding: 10px 18px; font-weight: 700; color: var(--fg); background: var(--panel-2); }
+  button.primary { background: var(--accent); color: var(--accent-ink); font-family: var(--display); font-size: 14px; }
+  button.small { padding: 4px 10px; font-size: 13px; border-radius: 8px; }
+  button.danger { color: var(--bad); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  select, input[type=text], input[type=number] { font: inherit; background: var(--bg); color: var(--fg); border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  input[type=text] { min-width: 0; }
+  .stats { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: 14px; } .stats b { color: var(--fg); font-size: 18px; font-family: var(--display); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; width: 70px; }
+  td.n.zero { color: var(--accent); }
+  tr.wrong td { color: var(--muted); text-decoration: line-through; } tr.wrong td.n { text-decoration: none; }
+  tr.selected { background: var(--panel-2); }
+  .variants { color: var(--muted); font-size: 13px; }
+  .variants span { white-space: nowrap; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .near { color: var(--accent); font-size: 13px; }
+  .tablewrap { overflow-x: auto; }
+  pre { background: var(--bg); border-radius: 12px; padding: 14px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--bg); font-size: 13px; color: var(--muted); }
+  label.inline { display: inline-flex; gap: 8px; align-items: center; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Survey to <span>Board</span></h1>
+  <p class="note">Turn the answers from your Google Form into a scored category for Rare Answer Twenty. Everything happens in this page; nothing is uploaded anywhere.</p>
+
+  <section class="panel">
+    <h2>1. Paste the responses</h2>
+    <ol class="steps">
+      <li>In Google Forms, open <b>Responses</b> and click the Sheets icon to open the responses spreadsheet.</li>
+      <li>Click the column letter above a question to select the whole column, copy it, and paste it below. (You can also paste the whole sheet; you'll pick the question next.)</li>
+    </ol>
+    <textarea id="raw" placeholder="Paste here. One respondent per line, answers separated by commas, e.g.
+Paris, London, Berlin, Rome, Madrid
+Paris, Berlin, Prag, Warszawa, Oslo, København"></textarea>
+    <div class="actions">
+      <button class="primary" id="parse">Count the answers</button>
+      <label class="inline">Question column <select id="col"></select></label>
+      <label class="inline">Respondents (people asked) <input type="number" id="respondents" min="1" style="width:90px"></label>
+      <span class="hint" id="parse-hint"></span>
+    </div>
+  </section>
+
+  <section class="panel" id="review" hidden>
+    <h2>2. Tidy up</h2>
+    <p class="note">Answers that look like the same thing with a different spelling are grouped automatically; check the groups. Select two rows and press <b>Merge</b> to combine them. Press <b>Wrong</b> on anything that isn't a valid answer (it stops counting). Rename a row to the spelling you want shown.</p>
+    <div class="stats"><div><b id="s-resp">0</b> respondents</div><div><b id="s-answers">0</b> different answers</div><div><b id="s-zero">0</b> given by nobody... yet</div></div>
+    <div class="actions">
+      <button id="merge" disabled>Merge selected</button>
+      <button id="unselect" class="small">Clear selection</button>
+      <span class="hint">Score = people who gave the answer ÷ respondents × 100, rounded.</span>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th style="width:30px"></th><th>Answer (shown in the game)</th><th>Spellings people used</th><th style="text-align:right">People</th><th style="text-align:right">Score</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <input type="text" id="extra" placeholder="Add a correct answer nobody gave (scores 0)" style="flex:1 1 260px">
+      <button id="add-extra">Add</button>
+    </div>
+  </section>
+
+  <section class="panel" id="out" hidden>
+    <h2>3. Copy into the game</h2>
+    <div class="actions">
+      <input type="text" id="title" placeholder="Category title, e.g. Capital cities of Europe" style="flex:1 1 300px">
+      <input type="text" id="qnote" placeholder="Note shown under the title (optional)" style="flex:1 1 300px">
+      <button class="primary" id="gen">Make the code</button>
+      <button id="copy">Copy</button>
+    </div>
+    <pre id="code"></pre>
+    <p class="note">Paste this inside the <code>ROUNDS = [ … ]</code> list near the top of the <code>&lt;script&gt;</code> in <code>public/index.html</code>, after any existing entry. Save, restart the game, done.</p>
+  </section>
+</div>
+
+<script>
+const el = id => document.getElementById(id);
+let rows = [];          // {name, variants:{spelling:count}, people, wrong, sel}
+let respondents = 0;
+
+function norm(s) { return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ø/g, "o").replace(/æ/g, "ae").replace(/å/g, "a").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim().replace(/^the /, ""); }
+function key(s) { // aggressive key for grouping spellings
+  let k = norm(s).replace(/ /g, "");
+  k = k.replace(/(.)\1+/g, "$1");           // doubled letters
+  k = k.replace(/ph/g, "f").replace(/c([^h]|$)/g, "k$1").replace(/ck/g, "k").replace(/y/g, "i").replace(/w/g, "v").replace(/z/g, "s").replace(/x/g, "ks");
+  k = k.replace(/[aeiou]/g, "");            // drop vowels
+  return k;
+}
+function lev(a, b) { const m = a.length, n = b.length; if (!m) return n; if (!n) return m; const d = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) d[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[m][n]; }
+
+function splitCells(line) { // CSV-ish: handle quoted cells containing commas
+  const out = []; let cur = "", q = false;
+  for (let i = 0; i < line.length; i++) { const c = line[i]; if (c === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else q = !q; } else if (c === "\t" && !q) { out.push(cur); cur = ""; } else cur += c; }
+  out.push(cur); return out;
+}
+
+el("parse").addEventListener("click", () => {
+  const lines = el("raw").value.split(/\r?\n/).filter(l => l.trim());
+  if (!lines.length) { el("parse-hint").textContent = "Nothing to count yet."; return; }
+  const table = lines.map(splitCells);
+  const ncols = Math.max(...table.map(r => r.length));
+  const sel = el("col");
+  if (sel.options.length !== ncols) { sel.innerHTML = ""; for (let i = 0; i < ncols; i++) { const o = document.createElement("option"); o.value = i; o.textContent = (table[0][i] || "column " + (i + 1)).slice(0, 50); sel.appendChild(o); } sel.value = String(ncols - 1); }
+  const ci = Number(sel.value);
+  let cells = table.map(r => r[ci] || "");
+  // first line is probably the question text (a header) if it contains no commas and the rest do
+  if (cells.length > 1 && !/[,;\n]/.test(cells[0]) && cells.slice(1).some(c => /[,;]/.test(c))) cells = cells.slice(1);
+  cells = cells.filter(c => c.trim());
+  respondents = cells.length; el("respondents").value = respondents;
+  const groups = new Map(); // key -> row
+  for (const cell of cells) {
+    const seen = new Set();
+    for (let ans of cell.split(/[,;\n]+|\s+og\s+|\s+and\s+/)) {
+      ans = ans.trim().replace(/^[\-\d.\)\s]+/, "").replace(/\.$/, ""); if (!ans || norm(ans).length < 2) continue;
+      const k = key(ans) || norm(ans); if (seen.has(k)) continue; seen.add(k);
+      let row = groups.get(k);
+      if (!row) {
+        // near-duplicate against existing rows by edit distance on the normalised form
+        for (const r of groups.values()) { const a = norm(ans), b = norm(r.name); if (a.length > 4 && lev(a, b) <= Math.max(1, Math.floor(Math.min(a.length, b.length) / 5))) { row = r; break; } }
+      }
+      if (!row) { row = { name: ans, variants: {}, people: 0, wrong: false, sel: false }; groups.set(k, row); }
+      row.variants[ans] = (row.variants[ans] || 0) + 1; row.people++;
+      const best = Object.entries(row.variants).sort((a, b) => b[1] - a[1])[0][0]; row.name = best.charAt(0).toUpperCase() + best.slice(1);
+    }
+  }
+  rows = [...groups.values()].sort((a, b) => b.people - a.people || a.name.localeCompare(b.name));
+  el("parse-hint").textContent = respondents + " respondents, " + rows.length + " different answers.";
+  el("review").hidden = false; el("out").hidden = false; render();
+});
+el("col").addEventListener("change", () => el("parse").click());
+el("respondents").addEventListener("input", () => { respondents = Number(el("respondents").value) || respondents; render(); });
+
+function score(r) { return Math.round(r.people / Math.max(1, respondents) * 100); }
+function render() {
+  const tb = el("rows"); tb.innerHTML = "";
+  const live = rows.filter(r => !r.wrong);
+  el("s-resp").textContent = respondents; el("s-answers").textContent = live.length; el("s-zero").textContent = live.filter(r => r.people === 0).length;
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr"); tr.className = (r.wrong ? "wrong " : "") + (r.sel ? "selected" : "");
+    const c0 = document.createElement("td"); const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = r.sel; cb.addEventListener("change", () => { r.sel = cb.checked; render(); }); c0.appendChild(cb);
+    const c1 = document.createElement("td"); const inp = document.createElement("input"); inp.type = "text"; inp.value = r.name; inp.style.width = "100%"; inp.addEventListener("change", () => { r.name = inp.value.trim() || r.name; }); c1.appendChild(inp);
+    const c2 = document.createElement("td"); c2.className = "variants"; c2.innerHTML = Object.entries(r.variants).sort((a, b) => b[1] - a[1]).map(([v, n]) => "<span>" + escapeHtml(v) + (n > 1 ? " ×" + n : "") + "</span>").join(", ");
+    const c3 = document.createElement("td"); c3.className = "n"; c3.textContent = r.people;
+    const c4 = document.createElement("td"); c4.className = "n" + (score(r) === 0 ? " zero" : ""); c4.textContent = r.wrong ? "–" : score(r);
+    const c5 = document.createElement("td"); const w = document.createElement("button"); w.className = "small " + (r.wrong ? "" : "danger"); w.textContent = r.wrong ? "Restore" : "Wrong"; w.addEventListener("click", () => { r.wrong = !r.wrong; render(); }); c5.appendChild(w);
+    tr.append(c0, c1, c2, c3, c4, c5); tb.appendChild(tr);
+  });
+  el("merge").disabled = rows.filter(r => r.sel).length < 2;
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+
+el("merge").addEventListener("click", () => {
+  const sel = rows.filter(r => r.sel); if (sel.length < 2) return;
+  const target = sel.sort((a, b) => b.people - a.people)[0];
+  for (const r of sel) { if (r === target) continue; for (const [v, n] of Object.entries(r.variants)) target.variants[v] = (target.variants[v] || 0) + n; target.people += r.people; rows = rows.filter(x => x !== r); }
+  target.sel = false; rows.sort((a, b) => b.people - a.people || a.name.localeCompare(b.name)); render();
+});
+el("unselect").addEventListener("click", () => { rows.forEach(r => r.sel = false); render(); });
+el("add-extra").addEventListener("click", () => { const v = el("extra").value.trim(); if (!v) return; rows.push({ name: v, variants: {}, people: 0, wrong: false, sel: false }); el("extra").value = ""; render(); });
+el("extra").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); el("add-extra").click(); } });
+
+el("gen").addEventListener("click", () => {
+  const title = el("title").value.trim() || "Untitled category";
+  const note = el("qnote").value.trim() || ("Surveyed: " + respondents + " people were asked.");
+  const live = rows.filter(r => !r.wrong).sort((a, b) => b.people - a.people || a.name.localeCompare(b.name));
+  const items = live.map(r => {
+    const aliases = Object.keys(r.variants).map(v => v.toLowerCase()).filter(v => norm(v) !== norm(r.name));
+    const uniq = [...new Set(aliases.map(a => a.trim()))].slice(0, 8);
+    return JSON.stringify([r.name, score(r), ...uniq]);
+  });
+  const code = "  { title: " + JSON.stringify(title) + ", note: " + JSON.stringify(note) + ", answers: [\n    " + items.join(",") + "] },";
+  el("code").textContent = code;
+});
+el("copy").addEventListener("click", () => { const t = el("code").textContent; if (!t) el("gen").click(); navigator.clipboard.writeText(el("code").textContent).then(() => { el("copy").textContent = "Copied"; setTimeout(() => el("copy").textContent = "Copy", 1500); }).catch(() => {}); });
+</script>
+</body>
+</html>
